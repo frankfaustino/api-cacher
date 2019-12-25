@@ -9,6 +9,11 @@ import {
 } from '../api/intercom'
 import { query, queryDevrelIds, queryPersona } from './fns'
 
+const exectimer = require('exectimer')
+
+const Tick = exectimer.Tick 
+
+
 /**
  * Persona Table functions that fetches data from Intercom's API and updates SQL DB
  * refreshUsers, refreshTeams, refreshAdmins
@@ -19,7 +24,7 @@ export async function refreshUsers() {
 
     listOfUsers.map(async ({ id, name, email }: any) => {
       const isDevrelian = devrelians.includes(id) ? 1 : 0
-      console.log('refreshUsers: ', id, name, email)
+      // console.log('refreshUsers: ', id, name, email)
       const fields = `'${id}', '${name}', '${email}', 0, 0, ${isDevrelian}`
       await query([
         `REPLACE INTO persona (id, name, email, is_team, is_admin, is_devrelian) VALUES (${fields});`,
@@ -38,7 +43,7 @@ export async function refreshTeams() {
     const listOfTeams = await getTeams()
 
     listOfTeams.map(async ({ id, name }: any) => {
-      console.log('refreshTeams: ', id, name)
+      // console.log('refreshTeams: ', id, name)
       const fields = `'${id}', '${name}', NULL, 0, 0, 1`
       await query([
         `REPLACE INTO persona (id, name, email, is_team, is_admin, is_devrelian) VALUES (${fields});`,
@@ -57,7 +62,7 @@ export async function refreshAdmins() {
 
     listOfAdmins.map(async ({ id, name, email }: any) => {
       const isDevrelian = devrelians.includes(id) ? 1 : 0
-      console.log('refreshAdmins: ', id, name, email)
+      // console.log('refreshAdmins: ', id, name, email)
       const fields = `'${id}', '${name}', '${email}', 0, 1, ${isDevrelian}`
       await query([
         `REPLACE INTO persona (id, name, email, is_team, is_admin, is_devrelian) VALUES (${fields});`,
@@ -102,13 +107,17 @@ export async function getUsersNeedingRefresh(): Promise<Array<string>> {
 
 export async function getConversations() {
   try {
+    const tick = new Tick('getConversations')
+    tick.start()
     const listOfUsers = await getUsersNeedingRefresh()
     const listOfConversations = listOfUsers.map(async id => {
-      console.log(`getConversations: ${id}`)
+      // console.log(`getConversations: ${id}`)
       return await getAdminConversations(id)
     })
     const list = Promise.all(listOfConversations)
-    console.log('getConversations: finished fetching conversations')
+    tick.stop()
+    const result = exectimer.timers.getConversations
+    console.log('getConversations time: ' + result.parse(result.duration()))
     return (await list).reduce((acc, cur) => acc.concat(cur))
   } catch (e) {
     console.log(e)
@@ -130,10 +139,13 @@ async function wasAssignedToTeam(name: string, parts: any) {
 
 export async function getConversationDetails() {
   try {
+    const tick = new Tick('getConversationDetails')
+    tick.start()
     const list = await getConversations()
-    console.log('getConversationDetails: finished fetching conversations')
     const output = Promise.all(list.map(async ({ id }: any) => await getConversation(id)))
-    console.log('getConversationDetails: finished fetching details')
+    tick.stop()
+    const result = exectimer.timers.getConversationDetails
+    console.log('getConversationDetails time: ' + result.parse(result.duration()))
     return output
   } catch (e) {
     console.log(e)
@@ -153,7 +165,7 @@ function getFirstResponseTime(parts: any) {
   return firstResponseTime
 }
 
-export async function refreshCacheWithConversations() {
+export async function refreshConversation() {
   const fields = [
     'id',
     'name',
@@ -169,8 +181,10 @@ export async function refreshCacheWithConversations() {
     'link'
   ]
   try {
+    const tick = new Tick('refreshConversation')
+    tick.start()
     const listOfConvs = await getConversationDetails()
-    console.log('✨refreshCacheWithConversations start')
+    console.log('refreshConversation start')
 
     const output = listOfConvs.map(async (conv: any) => {
       if (conv) {
@@ -184,7 +198,6 @@ export async function refreshCacheWithConversations() {
           tags,
           updated_at
         } = conv
-        console.log('✨refreshCacheWithConversations', id)
         const tagsList = (tags && tags.tags) || []
         const partsList = (conversation_parts && conversation_parts.conversation_parts) || []
         const assigneeId = (assignee && assignee.id) || ''
@@ -218,9 +231,11 @@ export async function refreshCacheWithConversations() {
           'COMMIT;'
         ])
       }
-    })
 
-    console.log('💥', 'reached end of refreshCacheWithConversations')
+    })
+    tick.stop()
+    const result = exectimer.timers.refreshConversation
+    console.log('refreshConversation time: ' + result.parse(result.duration()))
     return Promise.all(output)
   } catch (e) {
     console.log(e)

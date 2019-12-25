@@ -1,6 +1,9 @@
 import axios from 'axios'
 
 const limiter = require('axios-rate-limit')
+const exectimer = require('exectimer')
+
+const Tick = exectimer.Tick 
 
 const axiosInstance = axios.create({
   baseURL: 'https://api.intercom.io',
@@ -16,6 +19,8 @@ export async function getUsers(page: number) {
 }
 
 export async function getAllUsers() {
+  const tick = new Tick('getAllUsers')
+  tick.start()
   const firstPage = await getUsers(1)
   const users = firstPage.data.users || []
   const totalPages = firstPage.data.pages.total_pages
@@ -28,7 +33,9 @@ export async function getAllUsers() {
     }
     pg++
   }
-  // console.log('getAllUsers: ', users.length, pg)
+  tick.stop()
+  const result = exectimer.timers.getAllUsers
+  console.log('getAllUsers time: ' + result.parse(result.duration()), users.length, pg)
   return users
 }
 
