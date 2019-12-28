@@ -1,8 +1,7 @@
 import { Request, Response } from 'express'
 
 import { queryPersona } from '../../db/fns'
-import { refreshUsers, refreshTeams, refreshAdmins, refreshConversation } from '../../db/intercom'
-import { setUpTables, showTables } from '../../db/setup'
+import { refreshUsers, refreshTeams, refreshAdmins, refreshConversation, setUpTables, showTables } from '../../db/intercom'
 
 
 const exectimer = require('exectimer')

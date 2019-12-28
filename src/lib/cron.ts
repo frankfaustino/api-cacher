@@ -1,4 +1,4 @@
-import { refreshConversation, refreshAdmins, refreshTeams, refreshUsers } from '../db/intercom'
+import { refreshConversation, refreshAdmins, refreshTeams, refreshUsers, setUpTables } from '../db/intercom'
 
 const { CronJob } = require('cron')
 const exectimer = require('exectimer')
@@ -13,6 +13,7 @@ new CronJob('*/30 * * * *', async () => {
   const tick = new Tick(`cronJob_${count}`)
   tick.start()
 
+  await setUpTables()
   await refreshUsers()
   await refreshTeams()
   await refreshAdmins()

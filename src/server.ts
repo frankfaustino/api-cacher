@@ -17,5 +17,5 @@ app
   .use(handleError)
   .listen(PORT, () => console.log(`🤖 Server is listening on port ${PORT} in ${app.get('env')} mode`))
 
-const spawn = cp.fork(require.resolve('./lib/cron.ts'))
+const spawn = cp.fork(require.resolve('./lib/cron'))
 spawn.on('close', code => console.log(`👋 Child process exited with code ${code}`))

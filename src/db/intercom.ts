@@ -242,3 +242,66 @@ export async function refreshConversation() {
     return e
   }
 }
+
+type TablesObject = {
+  Tables_in_intercom: string
+}
+
+export async function showTables(): Promise<Array<string>> {
+  const result = await query(['SHOW TABLES;'])
+  return result[0] && Array.isArray(result[0]) ? result[0].map((obj: TablesObject) => obj['Tables_in_intercom']) : []
+}
+
+async function createTable(tableName: string, columns: Array<string>) {
+  try {
+    console.log(`✍️  Creating ${tableName} table...`)
+    const queryList = [`DROP TABLE IF EXISTS ${tableName};`, `CREATE TABLE ${tableName} (${columns}) CHARACTER SET "utf8" ;`, 'SHOW TABLES;']
+    const tables = await query(queryList)
+    return tables
+  } catch (e) {
+    console.log(e)
+    throw e
+  }
+}
+
+export async function setUpTables() {
+  const tables = await showTables()
+
+  if (!tables.includes('persona')) {
+    const fields = [
+      'id VARCHAR(255) PRIMARY KEY',
+      'name NVARCHAR(255)',
+      'email NVARCHAR(255)',
+      'is_team BOOLEAN',
+      'is_admin BOOLEAN',
+      'is_devrelian BOOLEAN'
+    ]
+    await createTable('persona', fields)
+  }
+  if (!tables.includes('persona_conversation')) {
+    await createTable('persona_conversation', [
+      'user_id VARCHAR(255) NOT NULL',
+      'conv_id VARCHAR(255) PRIMARY KEY'
+    ])
+  }
+  if (!tables.includes('conversation')) {
+    const fields = [
+      'id VARCHAR(255) PRIMARY KEY',
+      'name NVARCHAR(255)',
+      'open BOOLEAN',
+      'created_at DATETIME',
+      'updated_at DATETIME',
+      'first_response_at DATETIME',
+      'is_escalation BOOLEAN',
+      'is_appmarket BOOLEAN',
+      'is_semi_integration BOOLEAN',
+      'is_dev BOOLEAN',
+      'subject NVARCHAR(255)',
+      'link VARCHAR(255)'
+    ]
+    await createTable('conversation', fields)
+    await query(['ALTER TABLE conversation CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'])
+  }
+  return 'Finished setting up tables'
+}
+
