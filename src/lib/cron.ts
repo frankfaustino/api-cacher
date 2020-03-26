@@ -1,26 +1,64 @@
-import { refreshConversation, refreshAdmins, refreshTeams, refreshUsers, setUpTables } from '../db/intercom'
+import { CronJob } from 'cron'
+import * as exectimer from 'exectimer'
+import * as moment from 'moment'
 
-const { CronJob } = require('cron')
-const exectimer = require('exectimer')
+import {
+  AppMetrics,
+  DevMetrics,
+  Metrics,
+  writeToDB
+} from './jira'
+import db from '../db'
+import { slackWebhook } from '.'
 
+
+const job = async (startDate: moment.Moment, metrics: Metrics): Promise<(number | undefined | null)[] | null | false> => {
+  const start = moment(startDate).format('YYYY-MM-DD')
+  const end = moment(startDate).add(1, 'day').format('YYYY-MM-DD')
+  try {
+    await db.getConnection()
+
+    metrics.setDate = start
+    const response = await metrics.fetchData(start, end)
+    console.log('👉 job resp: ', start, response)
+
+    if (metrics.valuesDefined) {
+      await writeToDB(metrics)
+      return response
+    } else {
+      throw Error('Failed to fetch JIRA data')
+    }
+  } catch ({ message }) {
+    console.log('❌ job error: ', start, message)
+    return false
+  }
+}
 
 const Tick = exectimer.Tick
 let count = 0
 
-// Run cron job every 30 minutes
-new CronJob('*/30 * * * *', async () => {
-  console.log('🚀 cron job start: ', new Date())
+// At minute 25 past every 6th hour from 2 through 23
+const cron = new CronJob('25 2/6 * * *', async () => {
+  const start = moment(new Date())
+  console.log('🚀 cron job start: ', start.format('YYYY-MM-DD'))
   const tick = new Tick(`cronJob_${count}`)
   tick.start()
 
-  await setUpTables()
-  await refreshUsers()
-  await refreshTeams()
-  await refreshAdmins()
-  await refreshConversation()
+  const apps = await job(start, new AppMetrics())
+  if (apps) {
+    const body = { text: `Loaded DAA metrics for *${start.format('YYYY-MM-DD')}*: *${apps[0]}* app(s) approved / *${apps[1]}* app(s) rejected / *${apps[2]}* new app(s) submitted / *${apps[3]}* total app(s) pending` }
+    slackWebhook.post('', body)
+  }
+  const devs = await job(start, new DevMetrics())
+  if (devs) {
+    const body = { text: `Loaded DAV metrics for *${start.format('YYYY-MM-DD')}*: *${devs[0]}* dev account(s) approved / *${devs[1]}* dev account(s) rejected / *${devs[2]}* new dev account(s) submitted / *${devs[3]}* total dev account(s) pending` }
+    slackWebhook.post('', body)
+  }
 
   tick.stop()
   const result = exectimer.timers[`cronJob_${count}`]
   count++
   console.log('⏳ cron job time: ', result.parse(result.duration()), '\n✋ cron job count: ', count)
 }).start()
+
+export default cron
