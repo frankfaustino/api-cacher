@@ -35,12 +35,12 @@ const job = async (startDate: moment.Moment, metrics: Metrics): Promise<(number 
 }
 
 const Tick = exectimer.Tick
-let count = 0
+export let count = 0
 
-// At minute 25 past every 6th hour from 2 through 23
-const cron = new CronJob('25 2/6 * * *', async () => {
+// At minute 25 past hour 2, 8, 14, and 20
+const cron = new CronJob('0 25 2,8,14,20 * * *', async () => {
   const start = moment(new Date())
-  console.log('🚀 cron job start: ', start.format('YYYY-MM-DD'))
+  console.log('🚀 cron job start: ', start.format('LLLL'))
   const tick = new Tick(`cronJob_${count}`)
   tick.start()
 
@@ -59,6 +59,6 @@ const cron = new CronJob('25 2/6 * * *', async () => {
   const result = exectimer.timers[`cronJob_${count}`]
   count++
   console.log('⏳ cron job time: ', result.parse(result.duration()), '\n✋ cron job count: ', count)
-}).start()
+})
 
 export default cron
