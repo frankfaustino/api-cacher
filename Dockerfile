@@ -1,11 +1,12 @@
-FROM node:latest
+FROM node:13-alpine
 
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
-COPY package*.json /usr/src/app/
+RUN mkdir -p /usr/src/api-cacher
+WORKDIR /usr/src/api-cacher
+
+COPY package*.json ./
 RUN npm install
 
-COPY . /usr/src/app
+COPY . /usr/src/api-cacher
 RUN npm run build
 
 ENV NODE_ENV production
