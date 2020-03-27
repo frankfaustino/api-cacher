@@ -3,6 +3,8 @@ import * as moment from 'moment'
 
 import cron from '../lib/cron'
 import { count } from '../lib/cron'
+import config from '../db/config'
+import db from '../db'
 
 export const start = (_: Request, res: Response) => {
   cron.start()
@@ -38,4 +40,16 @@ export const next = (_: Request, res: Response) => {
 export const last = (_: Request, res: Response) => {
   const lastDate = cron.lastDate()
   res.json({ message: lastDate ? `cron job last ran on ${lastDate}` : 'cron job hasn\'t been run yet' })
+}
+
+export const dbConfig = (_: Request, res: Response) =>
+  res.json({ message: `current environment is set to ${process.env.NODE_ENV}`, config })
+
+export const dbConnection = async (_: Request, res: Response) => {
+  try {
+    await db.getConnection()
+    res.json({ message: 'able to connect to SQL DB' })
+  } catch (error) {
+    res.json(error)
+  }
 }
