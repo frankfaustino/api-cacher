@@ -12,7 +12,7 @@ import db from '../db'
 import { slackWebhook } from '.'
 
 
-const job = async (startDate: moment.Moment, metrics: Metrics): Promise<(number | undefined | null)[] | null> => {
+export const job = async (startDate: moment.Moment, metrics: Metrics): Promise<(number | undefined | null)[] | null> => {
   const start = moment(startDate).format('YYYY-MM-DD')
   const end = moment(startDate).add(1, 'day').format('YYYY-MM-DD')
   try {
@@ -47,13 +47,11 @@ const cron = new CronJob('0 25 2,8,14,20 * * *', async () => {
   const apps = await job(start, new AppMetrics())
   if (apps) {
     const body = { text: `Loaded DAA metrics for *${start.format('YYYY-MM-DD')}*: *${apps[0]}* app(s) approved / *${apps[1]}* app(s) rejected / *${apps[2]}* new app(s) submitted / *${apps[3]}* total app(s) pending` }
-    console.log(body)
     slackWebhook.post('', body)
   }
   const devs = await job(start, new DevMetrics())
   if (devs) {
     const body = { text: `Loaded DAV metrics for *${start.format('YYYY-MM-DD')}*: *${devs[0]}* dev account(s) approved / *${devs[1]}* dev account(s) rejected / *${devs[2]}* new dev account(s) submitted / *${devs[3]}* total dev account(s) pending` }
-    console.log(body)
     slackWebhook.post('', body)
   }
 
