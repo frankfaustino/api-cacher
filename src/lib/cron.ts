@@ -12,6 +12,12 @@ import db from '../db'
 import { slackWebhook } from '.'
 
 
+/**
+ * Function that is called in the update endpoint and during cron job.
+ * Establishes DB connection, sets the Metrics date, fetches Jira data and then writes to GCP DB.
+ * @param {Moment} startDate
+ * @param {Metrics} metrics - instance of Metrics
+ */
 export const job = async (startDate: moment.Moment, metrics: Metrics): Promise<(number | undefined | null)[] | null> => {
   const start = moment(startDate).format('YYYY-MM-DD')
   const end = moment(startDate).add(1, 'day').format('YYYY-MM-DD')
@@ -37,7 +43,9 @@ export const job = async (startDate: moment.Moment, metrics: Metrics): Promise<(
 const Tick = exectimer.Tick
 export let count = 0
 
-// At minute 25 past hour 2, 8, 14, and 20
+/**
+ * Instance of CronJob that calls job() at minute 25 past hour 2, 8, 14, and 20 and then Slacks the results.
+ */
 const cron = new CronJob('0 25 2,8,14,20 * * *', async () => {
   const start = moment(new Date())
   console.log('🚀 cron job start: ', start.format('LLLL'))
