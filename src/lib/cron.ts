@@ -1,5 +1,6 @@
 import { CronJob } from 'cron'
 import * as exectimer from 'exectimer'
+import { PoolConnection } from 'mariadb'
 import * as moment from 'moment'
 
 import {
@@ -21,8 +22,9 @@ import { slackWebhook } from '.'
 export const job = async (startDate: moment.Moment, metrics: Metrics): Promise<(number | undefined | null)[] | null> => {
   const start = moment(startDate).format('YYYY-MM-DD')
   const end = moment(startDate).add(1, 'day').format('YYYY-MM-DD')
+  let conn: PoolConnection | undefined
   try {
-    await db.getConnection()
+    conn = await db.getConnection()
 
     metrics.setDate = start
     const response = await metrics.fetchData(start, end)
@@ -37,6 +39,8 @@ export const job = async (startDate: moment.Moment, metrics: Metrics): Promise<(
   } catch (error) {
     console.log('❌ job error: ', start, error)
     return null
+  } finally {
+    if (conn) conn.end()
   }
 }
 

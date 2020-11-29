@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import { PoolConnection } from 'mariadb'
 import * as moment from 'moment'
 
 import cron from '../lib/cron'
@@ -58,11 +59,14 @@ export const dbConfig = (_: Request, res: Response) =>
 
 /** Endpoint that checks if a DB connection can be established */
 export const dbConnection = async (_: Request, res: Response) => {
+  let conn: PoolConnection | undefined
   try {
-    await db.getConnection()
+    conn = await db.getConnection()
     res.json({ message: 'able to connect to SQL DB' })
   } catch (error) {
     res.json(error)
+  } finally {
+    if (conn) conn.end()
   }
 }
 
