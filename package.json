@@ -36,6 +36,6 @@
     "exectimer": "^2.2.2",
     "express": "^4.17.1",
     "mariadb": "^2.1.4",
-    "moment": "^2.24.0"
+    "moment": "^2.29.4"
   }
 }
